@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1b26"/>
+      <stop offset="100%" stop-color="#24283b"/>
+    </linearGradient>
+    <linearGradient id="omegaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7aa2f7"/>
+      <stop offset="100%" stop-color="#bb9af7"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="url(#bgGrad)" stroke="#7aa2f7" stroke-width="4"/>
+  <text x="64" y="84" font-family="JetBrains Mono, DejaVu Sans, sans-serif" font-size="72" font-weight="800" text-anchor="middle" fill="url(#omegaGrad)">Ω</text>
+  <circle cx="98" cy="30" r="7" fill="#9ece6a"/>
+</svg>
