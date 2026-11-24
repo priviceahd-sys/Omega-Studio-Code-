@@ -46,10 +46,11 @@ def run_app(argv: Optional[List[str]] = None) -> int:
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
 
+    desktop_id = os.environ.get("OMEGA_DESKTOP_ID", "omega-code-studio")
     app = QApplication(args)
     app.setApplicationName(__app_name__)
     app.setApplicationDisplayName(__app_name__)
-    app.setDesktopFileName("omega-code-studio")
+    app.setDesktopFileName(desktop_id)
     app.setApplicationVersion(__version__)
 
     initial_file = args[1] if len(args) > 1 and not args[1].startswith("-") else None

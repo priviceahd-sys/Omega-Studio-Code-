@@ -130,9 +130,17 @@ SNIPPET_TEMPLATES: List[Tuple[str, str, str]] = [
 def _config_file_path() -> Path:
     xdg = os.environ.get("XDG_CONFIG_HOME")
     base = Path(xdg) if xdg else (Path.home() / ".config")
-    cfg_dir = base / "omega-studio-code"
+    desktop_id = os.environ.get("OMEGA_DESKTOP_ID", "omega-code-studio")
+    cfg_dir = base / desktop_id
     cfg_dir.mkdir(parents=True, exist_ok=True)
-    return cfg_dir / "settings.json"
+    target = cfg_dir / "settings.json"
+    legacy = base / "omega-studio-code" / "settings.json"
+    if not target.exists() and legacy.exists():
+        try:
+            target.write_text(legacy.read_text(encoding="utf-8"), encoding="utf-8")
+        except Exception:
+            pass
+    return target
 
 
 class OmegaMainWindow(QMainWindow):
