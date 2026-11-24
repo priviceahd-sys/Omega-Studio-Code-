@@ -26,18 +26,22 @@ cp -r "$SCRIPT_DIR/assets" "$APP_SHARE/"
 cp "$SCRIPT_DIR/pyproject.toml" "$SCRIPT_DIR/requirements.txt" "$SCRIPT_DIR/run.sh" "$APP_SHARE/"
 chmod +x "$APP_SHARE/run.sh"
 
-echo "-> Configuration de l'environnement Python isolé (PyQt6)..."
+echo "-> Configuration de l'environnement Python (PyQt6)..."
 if command -v uv >/dev/null 2>&1; then
     if [[ ! -x "$APP_SHARE/.venv/bin/python" ]]; then
-        uv venv "$APP_SHARE/.venv"
+        uv venv --system-site-packages "$APP_SHARE/.venv" 2>/dev/null || uv venv "$APP_SHARE/.venv"
     fi
-    uv pip install --python "$APP_SHARE/.venv/bin/python" -r "$APP_SHARE/requirements.txt"
+    if ! "$APP_SHARE/.venv/bin/python" -c "import PyQt6" >/dev/null 2>&1; then
+        uv pip install --python "$APP_SHARE/.venv/bin/python" -r "$APP_SHARE/requirements.txt"
+    fi
 else
     if [[ ! -x "$APP_SHARE/.venv/bin/python" ]]; then
-        python3 -m venv "$APP_SHARE/.venv"
+        python3 -m venv --system-site-packages "$APP_SHARE/.venv"
     fi
-    "$APP_SHARE/.venv/bin/pip" install --upgrade pip
-    "$APP_SHARE/.venv/bin/pip" install -r "$APP_SHARE/requirements.txt"
+    if ! "$APP_SHARE/.venv/bin/python" -c "import PyQt6" >/dev/null 2>&1; then
+        "$APP_SHARE/.venv/bin/pip" install --upgrade pip
+        "$APP_SHARE/.venv/bin/pip" install -r "$APP_SHARE/requirements.txt"
+    fi
 fi
 
 echo "-> Création de la commande : $BIN_DIR/omega-studio"
