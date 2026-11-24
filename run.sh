@@ -7,22 +7,31 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PYTHONPATH="$SCRIPT_DIR${PYTHONPATH:+:$PYTHONPATH}"
 
-VENV_DIR="$SCRIPT_DIR/.venv"
+SYS_PY="/usr/bin/python3"
+if [[ ! -x "$SYS_PY" ]]; then
+    SYS_PY="$(command -v python3)"
+fi
 
-# Création automatique de l'environnement virtuel au premier lancement
-if [[ ! -x "$VENV_DIR/bin/python" ]]; then
-    echo "-> Initialisation de l'environnement Python local (.venv)..."
-    if command -v uv >/dev/null 2>&1; then
-        uv venv --system-site-packages "$VENV_DIR" 2>/dev/null || uv venv "$VENV_DIR"
-        if ! "$VENV_DIR/bin/python" -c "import PyQt6" >/dev/null 2>&1; then
-            uv pip install --python "$VENV_DIR/bin/python" -r "$SCRIPT_DIR/requirements.txt"
+# Si le Python système d'Arch/Omarchy possède déjà python-pyqt6, lancement instantané !
+if "$SYS_PY" -c "import PyQt6.QtWidgets" >/dev/null 2>&1; then
+    PYTHON_BIN="$SYS_PY"
+else
+    VENV_DIR="$SCRIPT_DIR/.venv"
+    if [[ ! -x "$VENV_DIR/bin/python" ]] || ! "$VENV_DIR/bin/python" -c "import PyQt6.QtWidgets" >/dev/null 2>&1; then
+        echo "-> Initialisation de l'environnement Python local (.venv)..."
+        if command -v pacman >/dev/null 2>&1; then
+            echo "-> Installation du paquet natif Arch/Omarchy 'python-pyqt6'..."
+            if sudo pacman -S --needed python-pyqt6 qt6-wayland && "$SYS_PY" -c "import PyQt6.QtWidgets" >/dev/null 2>&1; then
+                PYTHON_BIN="$SYS_PY"
+            fi
+        fi
+        if [[ -z "${PYTHON_BIN:-}" ]]; then
+            "$SYS_PY" -m venv --clear "$VENV_DIR"
+            "$VENV_DIR/bin/pip" --default-timeout=90 install -r "$SCRIPT_DIR/requirements.txt"
+            PYTHON_BIN="$VENV_DIR/bin/python"
         fi
     else
-        python3 -m venv --system-site-packages "$VENV_DIR"
-        if ! "$VENV_DIR/bin/python" -c "import PyQt6" >/dev/null 2>&1; then
-            "$VENV_DIR/bin/pip" install --upgrade pip
-            "$VENV_DIR/bin/pip" install -r "$SCRIPT_DIR/requirements.txt"
-        fi
+        PYTHON_BIN="$VENV_DIR/bin/python"
     fi
 fi
 
@@ -32,4 +41,4 @@ if [[ -n "${WAYLAND_DISPLAY:-}" && -z "${QT_QPA_PLATFORM:-}" ]]; then
 fi
 export QT_AUTO_SCREEN_SCALE_FACTOR=1
 
-exec "$VENV_DIR/bin/python" -m omega_studio "$@"
+exec "$PYTHON_BIN" -m omega_studio "$@"

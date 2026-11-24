@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Installateur dédié Omarchy (Arch Linux + Hyprland + Walker)
-# Installe Omega Studio Code dans votre espace utilisateur (~/.local) sans sudo !
+# Utilise en priorité le paquet natif Arch `python-pyqt6` (rapide, ~4 Mo, Wayland
+# natif, compatible Python 3.14, sans dépendre de pypi.org), avec repli pip/uv.
 # ==============================================================================
 set -euo pipefail
 
@@ -11,6 +12,11 @@ BIN_DIR="$HOME/.local/bin"
 APPS_DIR="$HOME/.local/share/applications"
 ICONS_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
 MIME_DIR="$HOME/.local/share/mime/packages"
+
+SYS_PY="/usr/bin/python3"
+if [[ ! -x "$SYS_PY" ]]; then
+    SYS_PY="$(command -v python3)"
+fi
 
 echo "+--------------------------------------------------------------+"
 echo "|    Installation d'OMEGA STUDIO CODE v2.0 sur Omarchy/Linux   |"
@@ -26,21 +32,30 @@ cp -r "$SCRIPT_DIR/assets" "$APP_SHARE/"
 cp "$SCRIPT_DIR/pyproject.toml" "$SCRIPT_DIR/requirements.txt" "$SCRIPT_DIR/run.sh" "$APP_SHARE/"
 chmod +x "$APP_SHARE/run.sh"
 
-echo "-> Configuration de l'environnement Python (PyQt6)..."
-if command -v uv >/dev/null 2>&1; then
-    if [[ ! -x "$APP_SHARE/.venv/bin/python" ]]; then
-        uv venv --system-site-packages "$APP_SHARE/.venv" 2>/dev/null || uv venv "$APP_SHARE/.venv"
+echo "-> Vérification de PyQt6 sur le système..."
+# 1. Sur Arch Linux / Omarchy, privilégier le paquet système natif python-pyqt6
+#    (léger, compilé pour Python 3.14 et intégré nativement à Hyprland/Wayland, sans PyPI)
+if ! "$SYS_PY" -c "import PyQt6.QtWidgets" >/dev/null 2>&1; then
+    if command -v pacman >/dev/null 2>&1; then
+        echo "-> Installation du paquet natif Arch/Omarchy 'python-pyqt6' via pacman..."
+        sudo pacman -S --needed python-pyqt6 qt6-wayland || true
     fi
-    if ! "$APP_SHARE/.venv/bin/python" -c "import PyQt6" >/dev/null 2>&1; then
-        uv pip install --python "$APP_SHARE/.venv/bin/python" -r "$APP_SHARE/requirements.txt"
-    fi
+fi
+
+if "$SYS_PY" -c "import PyQt6.QtWidgets" >/dev/null 2>&1; then
+    echo "-> PyQt6 système détecté : liaison rapide (.venv --system-site-packages)..."
+    "$SYS_PY" -m venv --system-site-packages --without-pip --clear "$APP_SHARE/.venv"
 else
-    if [[ ! -x "$APP_SHARE/.venv/bin/python" ]]; then
-        python3 -m venv --system-site-packages "$APP_SHARE/.venv"
-    fi
-    if ! "$APP_SHARE/.venv/bin/python" -c "import PyQt6" >/dev/null 2>&1; then
-        "$APP_SHARE/.venv/bin/pip" install --upgrade pip
-        "$APP_SHARE/.venv/bin/pip" install -r "$APP_SHARE/requirements.txt"
+    echo "-> Installation de PyQt6 dans l'environnement virtuel (.venv)..."
+    "$SYS_PY" -m venv --clear "$APP_SHARE/.venv"
+    if ! "$APP_SHARE/.venv/bin/pip" --default-timeout=90 install -r "$APP_SHARE/requirements.txt"; then
+        if command -v uv >/dev/null 2>&1; then
+            UV_HTTP_TIMEOUT=90 uv pip install --python "$APP_SHARE/.venv/bin/python" -r "$APP_SHARE/requirements.txt"
+        else
+            echo "[ERREUR] Impossible de télécharger PyQt6 depuis pypi.org."
+            echo "Sur Omarchy/Arch, exécutez simplement : sudo pacman -S python-pyqt6 qt6-wayland"
+            exit 1
+        fi
     fi
 fi
 
@@ -90,7 +105,7 @@ EOF
 command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$APPS_DIR" || true
 command -v update-mime-database >/dev/null 2>&1 && update-mime-database "$HOME/.local/share/mime" || true
 
-"$APP_SHARE/.venv/bin/python" -c "import sys; sys.path.insert(0, '$APP_SHARE'); import omega_studio; print('   [OK] Module Omega Studio Code v' + omega_studio.__version__ + ' vérifié.')"
+"$APP_SHARE/.venv/bin/python" -c "import sys; sys.path.insert(0, '$APP_SHARE'); import omega_studio, PyQt6; print('   [OK] Omega Studio Code v' + omega_studio.__version__ + ' + PyQt6 prêts !')"
 
 echo ""
 echo "Installation terminée avec succès !"
