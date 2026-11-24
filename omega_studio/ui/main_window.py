@@ -344,7 +344,7 @@ class OmegaMainWindow(QMainWindow):
         # Barre d'état inférieure (style VS Code)
         status = QStatusBar(self)
         self.setStatusBar(status)
-        self.lbl_status_mode = QLabel(" Ω Omega Studio Code • Prêt ")
+        self.lbl_status_mode = QLabel(f" Ω {__app_name__} • Prêt ")
         self.lbl_status_profile = QLabel(f" Profil : {self.profile.name} ")
         self.lbl_status_pos = QLabel(" Ligne 1, Col 1 ")
         self.lbl_status_enc = QLabel(" UTF-8 • Alg_32 ")
@@ -591,7 +591,7 @@ class OmegaMainWindow(QMainWindow):
         act_manual = QAction("&Manuel officiel Alg_32 (F1)", self)
         act_manual.triggered.connect(lambda: self.right_tabs.setCurrentWidget(self.help_browser))
 
-        act_about = QAction("À &propos d'Omega Studio Code", self)
+        act_about = QAction(f"À &propos d'{__app_name__}", self)
         act_about.triggered.connect(self.show_about_dialog)
 
         m_help.addAction(act_pers)  # type: ignore[union-attr]
@@ -1124,7 +1124,7 @@ class OmegaMainWindow(QMainWindow):
         self.console.set_status("Prêt", self.theme.fg_muted)
         self.debugger_panel.set_debugging_active(False)
         self._clear_debug_highlights()
-        self.lbl_status_mode.setText(" Ω Omega Studio Code • Prêt ")
+        self.lbl_status_mode.setText(f" Ω {__app_name__} • Prêt ")
 
     def _clear_debug_highlights(self) -> None:
         ed = self.editor_workspace.current_editor()

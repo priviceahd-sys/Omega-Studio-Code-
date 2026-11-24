@@ -1,6 +1,6 @@
-ALGO bienvenue_omega_studio
+ALGO bienvenue_omega_code_studio
 ' ============================================================
-' Bienvenue dans Omega Studio Code (évolution moderne d'Alg_32)
+' Bienvenue dans Omega Code Studio (évolution moderne d'Alg_32)
 ' Appuyez sur F5 pour exécuter ou F10 pour le mode Pas-à-Pas !
 ' ============================================================
 CONST
@@ -10,7 +10,7 @@ VAR
     somme, i : entiers
 DEBUT
     AFFICHER "+----------------------------------------------+"
-    AFFICHER "|   Bienvenue dans OMEGA STUDIO CODE v2.0 !    |"
+    AFFICHER "|   Bienvenue dans OMEGA CODE STUDIO v2.0 !    |"
     AFFICHER "+----------------------------------------------+"
     AFFICHER "Date système : ", DATESYST(), " à ", HEURESYST()
     A_LA_LIGNE

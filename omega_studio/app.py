@@ -32,7 +32,7 @@ def run_app(argv: Optional[List[str]] = None) -> int:
 
     if any(flag in args[1:] for flag in ("--help", "-h")):
         print(f"{__app_name__} v{__version__} — IDE Algorithmique Moderne (Alg_32)")
-        print("Utilisation : omega-studio [fichier.alg]")
+        print("Utilisation : omega-code-studio [fichier.alg]")
         return 0
 
     configure_wayland_environment()
@@ -49,7 +49,7 @@ def run_app(argv: Optional[List[str]] = None) -> int:
     app = QApplication(args)
     app.setApplicationName(__app_name__)
     app.setApplicationDisplayName(__app_name__)
-    app.setDesktopFileName("omega-studio-code")
+    app.setDesktopFileName("omega-code-studio")
     app.setApplicationVersion(__version__)
 
     initial_file = args[1] if len(args) > 1 and not args[1].startswith("-") else None

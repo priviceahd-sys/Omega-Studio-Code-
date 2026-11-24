@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Omega Studio Code
+Name=Omega Code Studio
 GenericName=IDE Algorithmique (Alg_32)
 Comment=Environnement moderne de création, débogage Pas-à-Pas et traduction d'algorithmes (.alg)
-Exec=omega-studio %f
-Icon=omega-studio-code
+Exec=omega-code-studio %f
+Icon=omega-code-studio
 Terminal=false
 Categories=Development;IDE;Education;ComputerScience;
 MimeType=text/x-alg;
-StartupWMClass=omega-studio-code
-Keywords=algo;alg32;algexec;algorithmique;pseudocode;python;omega;
+StartupWMClass=omega-code-studio
+Keywords=omega;code;studio;algo;alg32;algexec;algorithmique;pseudocode;python;

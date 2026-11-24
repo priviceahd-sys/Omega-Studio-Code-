@@ -3,14 +3,14 @@ requires = ["setuptools>=65.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "omega-studio-code"
+name = "omega-code-studio"
 version = "2.0.0"
-description = "Omega Studio Code — IDE algorithmique moderne (successeur d'Alg_32 / Alg'exec) conçu pour Omarchy / Linux"
+description = "Omega Code Studio — IDE algorithmique moderne (successeur d'Alg_32 / Alg'exec) conçu pour Omarchy / Linux"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "Omega Studio Code"}
+    {name = "Omega Code Studio"}
 ]
 dependencies = [
     "PyQt6>=6.5.0",
@@ -22,6 +22,7 @@ dev = [
 ]
 
 [project.scripts]
+omega-code-studio = "omega_studio.__main__:main"
 omega-studio = "omega_studio.__main__:main"
 
 [tool.setuptools.packages.find]
@@ -33,4 +34,3 @@ omega_studio = ["resources/*.json"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
-

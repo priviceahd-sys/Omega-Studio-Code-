@@ -1,12 +1,12 @@
-# Ω Omega Studio Code v2.0
+# Ω Omega Code Studio v2.0
 
-**Omega Studio Code** est un environnement de développement intégré (IDE) de bureau en **Python / PyQt6**, conçu comme le successeur moderne complet d'**Alg_32 / Alg'exec** et d'**Algpers32** (Éducation Nationale / André Guntz), optimisé nativement pour **Omarchy** (Arch Linux + Hyprland / Wayland).
+**Omega Code Studio** est un environnement de développement intégré (IDE) de bureau en **Python / PyQt6**, conçu comme le successeur moderne complet d'**Alg_32 / Alg'exec** et d'**Algpers32** (Éducation Nationale / André Guntz), optimisé nativement pour **Omarchy** (Arch Linux + Hyprland / Wayland).
 
 ---
 
 ## ✨ Ce qui a été transformé par rapport à Alg_32 (1997)
 
-| Aspect | Alg_32 / Alg'exec historique (VB5, 1997) | Ω Omega Studio Code v2.0 (PyQt6) |
+| Aspect | Alg_32 / Alg'exec historique (VB5, 1997) | Ω Omega Code Studio v2.0 (PyQt6) |
 | :--- | :--- | :--- |
 | **Système & Rendu** | Windows 95/98 (`MSVBVM50.dll`, installateur 16/32 bits incompatible Linux) | **Natif Linux / Omarchy (Wayland + Hyprland HiDPI)**, multiplateforme |
 | **Interface visuelle** | Fenêtres grises fixes `MS Sans Serif` / `Courier New` | **Architecture moderne style VS Code** avec 4 thèmes (*Omarchy TokyoNight*, *VS Code Dark*, *Catppuccin Mocha*, *Clair Académique*) |
@@ -23,19 +23,19 @@
 ## 🚀 Installation et lancement sur Omarchy (Arch Linux + Hyprland)
 
 ### Option 1 — Installation complète dans Omarchy (Recommandée)
-Installe **Omega Studio Code** proprement dans votre session utilisateur (`~/.local`, **sans `sudo`**), crée la commande `omega-studio` et ajoute l'application avec son icône vectorielle directement dans votre lanceur **Walker (`Super + Espace`)** :
+Installe **Omega Code Studio** proprement dans votre session utilisateur (`~/.local`), crée la commande `omega-code-studio` et ajoute l'application avec son icône vectorielle directement dans votre lanceur **Walker (`Super + Espace`)** :
 
 ```bash
-git clone https://github.com/priviceahd-sys/Omega-Studio-Code-.git
-cd Omega-Studio-Code-
+git clone -b arena/fa8a2c9c-omega-studio-code https://github.com/priviceahd-sys/Omega-Studio-Code-.git
+builtin cd ~/Omega-Studio-Code-
 ./install-omarchy.sh
 ```
 
 Vous pouvez ensuite lancer le logiciel :
-- depuis **Walker (`Super + Espace`)** en tapant **`Omega Studio Code`** ;
+- depuis **Walker (`Super + Espace`)** en tapant **`Omega Code Studio`** ;
 - ou depuis votre terminal (**Ghostty / Alacritty**) :
   ```bash
-  omega-studio
+  omega-code-studio
   ```
 
 *(Pour désinstaller proprement à tout moment : `./uninstall-omarchy.sh`)*

@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Installateur dédié Omarchy (Arch Linux + Hyprland + Walker)
-# Utilise en priorité le paquet natif Arch `python-pyqt6` (rapide, ~4 Mo, Wayland
-# natif, compatible Python 3.14, sans dépendre de pypi.org), avec repli pip/uv.
+# Installe "Omega Code Studio" (commande `omega-code-studio` + alias `omega-studio`)
 # ==============================================================================
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_SHARE="$HOME/.local/share/omega-studio-code"
+APP_SHARE="$HOME/.local/share/omega-code-studio"
 BIN_DIR="$HOME/.local/bin"
 APPS_DIR="$HOME/.local/share/applications"
 ICONS_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
@@ -19,10 +18,15 @@ if [[ ! -x "$SYS_PY" ]]; then
 fi
 
 echo "+--------------------------------------------------------------+"
-echo "|    Installation d'OMEGA STUDIO CODE v2.0 sur Omarchy/Linux   |"
+echo "|    Installation d'OMEGA CODE STUDIO v2.0 sur Omarchy/Linux   |"
 echo "+--------------------------------------------------------------+"
 
 mkdir -p "$APP_SHARE" "$BIN_DIR" "$APPS_DIR" "$ICONS_DIR" "$MIME_DIR"
+
+# Nettoyage automatique de l'ancien dossier/lanceur si une version précédente était présente
+rm -rf "$HOME/.local/share/omega-studio-code"
+rm -f "$APPS_DIR/omega-studio-code.desktop"
+rm -f "$ICONS_DIR/omega-studio-code.svg"
 
 echo "-> Copie des fichiers de l'application vers $APP_SHARE..."
 rm -rf "$APP_SHARE/omega_studio" "$APP_SHARE/examples" "$APP_SHARE/assets"
@@ -33,8 +37,6 @@ cp "$SCRIPT_DIR/pyproject.toml" "$SCRIPT_DIR/requirements.txt" "$SCRIPT_DIR/run.
 chmod +x "$APP_SHARE/run.sh"
 
 echo "-> Vérification de PyQt6 sur le système..."
-# 1. Sur Arch Linux / Omarchy, privilégier le paquet système natif python-pyqt6
-#    (léger, compilé pour Python 3.14 et intégré nativement à Hyprland/Wayland, sans PyPI)
 if ! "$SYS_PY" -c "import PyQt6.QtWidgets" >/dev/null 2>&1; then
     if command -v pacman >/dev/null 2>&1; then
         echo "-> Installation du paquet natif Arch/Omarchy 'python-pyqt6' via pacman..."
@@ -59,8 +61,8 @@ else
     fi
 fi
 
-echo "-> Création de la commande : $BIN_DIR/omega-studio"
-cat > "$BIN_DIR/omega-studio" <<EOF
+echo "-> Création de la commande : $BIN_DIR/omega-code-studio"
+cat > "$BIN_DIR/omega-code-studio" <<EOF
 #!/usr/bin/env bash
 export PYTHONPATH="$APP_SHARE\${PYTHONPATH:+:\$PYTHONPATH}"
 if [[ -n "\${WAYLAND_DISPLAY:-}" && -z "\${QT_QPA_PLATFORM:-}" ]]; then
@@ -69,33 +71,34 @@ fi
 export QT_AUTO_SCREEN_SCALE_FACTOR=1
 exec "$APP_SHARE/.venv/bin/python" -m omega_studio "\$@"
 EOF
-chmod +x "$BIN_DIR/omega-studio"
+chmod +x "$BIN_DIR/omega-code-studio"
+ln -sf "$BIN_DIR/omega-code-studio" "$BIN_DIR/omega-studio"
 
-echo "-> Installation de l'icône SVG et du lanceur Walker / Hyprland..."
-cp "$APP_SHARE/assets/omega-studio-code.svg" "$ICONS_DIR/omega-studio-code.svg"
+echo "-> Installation de l'icône SVG et du lanceur Walker « Omega Code Studio »..."
+cp "$APP_SHARE/assets/omega-studio-code.svg" "$ICONS_DIR/omega-code-studio.svg"
 
-cat > "$APPS_DIR/omega-studio-code.desktop" <<EOF
+cat > "$APPS_DIR/omega-code-studio.desktop" <<EOF
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Omega Studio Code
+Name=Omega Code Studio
 GenericName=IDE Algorithmique (Alg_32)
 Comment=Environnement moderne de création, débogage Pas-à-Pas et traduction d'algorithmes (.alg)
-Exec=$BIN_DIR/omega-studio %f
-Icon=omega-studio-code
+Exec=$BIN_DIR/omega-code-studio %f
+Icon=omega-code-studio
 Terminal=false
 Categories=Development;IDE;Education;
 MimeType=text/x-alg;
-StartupWMClass=omega-studio-code
-Keywords=algo;alg32;algexec;algorithmique;pseudocode;omega;
+StartupWMClass=omega-code-studio
+Keywords=omega;code;studio;algo;alg32;algexec;algorithmique;pseudocode;
 EOF
 
 # Association des fichiers .alg
-cat > "$MIME_DIR/omega-studio-alg.xml" <<'EOF'
+cat > "$MIME_DIR/omega-code-studio-alg.xml" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
   <mime-type type="text/x-alg">
-    <comment>Algorithme Alg_32 / Omega Studio Code</comment>
+    <comment>Algorithme Alg_32 / Omega Code Studio</comment>
     <glob pattern="*.alg"/>
     <glob pattern="*.ALG"/>
   </mime-type>
@@ -105,13 +108,13 @@ EOF
 command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$APPS_DIR" || true
 command -v update-mime-database >/dev/null 2>&1 && update-mime-database "$HOME/.local/share/mime" || true
 
-"$APP_SHARE/.venv/bin/python" -c "import sys; sys.path.insert(0, '$APP_SHARE'); import omega_studio, PyQt6; print('   [OK] Omega Studio Code v' + omega_studio.__version__ + ' + PyQt6 prêts !')"
+"$APP_SHARE/.venv/bin/python" -c "import sys; sys.path.insert(0, '$APP_SHARE'); import omega_studio, PyQt6; print('   [OK] ' + omega_studio.__app_name__ + ' v' + omega_studio.__version__ + ' + PyQt6 prêts !')"
 
 echo ""
 echo "Installation terminée avec succès !"
-echo "  1) Depuis Omarchy (Super + Espace / Walker) : tapez « Omega Studio Code »"
+echo "  1) Depuis Omarchy (Super + Espace / Walker) : tapez « Omega Code Studio »"
 if [[ ":$PATH:" == *":$BIN_DIR:"* ]]; then
-    echo "  2) Depuis votre terminal                    : omega-studio"
+    echo "  2) Depuis votre terminal                    : omega-code-studio"
 else
-    echo "  2) Depuis votre terminal                    : ~/.local/bin/omega-studio"
+    echo "  2) Depuis votre terminal                    : ~/.local/bin/omega-code-studio"
 fi
