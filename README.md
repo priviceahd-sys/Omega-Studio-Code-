@@ -9,7 +9,7 @@
 | Aspect | Alg_32 / Alg'exec historique (VB5, 1997) | Ω Omega Code Studio v2.0 (PyQt6) |
 | :--- | :--- | :--- |
 | **Système & Rendu** | Windows 95/98 (`MSVBVM50.dll`, installateur 16/32 bits incompatible Linux) | **Natif Linux / Omarchy (Wayland + Hyprland HiDPI)**, multiplateforme |
-| **Interface visuelle** | Fenêtres grises fixes `MS Sans Serif` / `Courier New` | **Architecture moderne style VS Code** avec 4 thèmes (*Omarchy TokyoNight*, *VS Code Dark*, *Catppuccin Mocha*, *Clair Académique*) |
+| **Interface visuelle** | Fenêtres grises fixes `MS Sans Serif` / `Courier New` | **Studio Visuel complet (`Ctrl+Shift+P`)** : mélanges de couleurs sur mesure, 8 dégradés animés (*Aurore Boréale*, *Cyberpunk Néon*, *Crépuscule*...), galerie multi-images avec diaporama en fondu enchaîné, effet verre dépoli (*Glassmorphism*) + 4 thèmes classiques |
 | **Éditeur de code** | Mono-fichier, limité à 73 colonnes (et 25-30 lignes en démo), sans numéros de lignes | **Multi-onglets illimité**, numéros de lignes, coloration syntaxique, auto-indentation, auto-complétion (`Ctrl+Espace`), recherche/remplacement (`Ctrl+F` / `Ctrl+H`), points d'arrêt (`F9`) et formateur automatique (`Ctrl+Shift+F`) |
 | **Débogage Pas-à-Pas** | Fenêtre séparée rudimentaire tronquant les valeurs à 35 caractères | **Débogueur visuel intégré** (`F10` Suivant, `F11` Entrer, `F8` Cadence auto réglable), espion complet des variables, tableaux 1D/2D/3D, structures et pile d'appels récursive |
 | **Pédagogie visuelle** | Aucune représentation graphique ni export | **Organigramme normalisé automatique** (zoom interactif, suivi en direct du Pas-à-Pas, export PNG haute définition) |

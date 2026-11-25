@@ -43,7 +43,7 @@ from PyQt6.QtWidgets import (
 )
 
 from ..core.keywords import BUILTIN_FUNCTIONS, DATA_TYPES, STANDARD_KEYWORDS, KeywordProfile
-from .themes import StudioTheme
+from .themes import StudioTheme, qss_rgba
 
 
 def pick_monospace_font(point_size: int = 11) -> QFont:
@@ -307,6 +307,13 @@ class CodeEditor(QPlainTextEdit):
         self.breakpoints: Set[int] = set()
         self.debug_line: Optional[int] = None
         self.error_lines: Dict[int, str] = {}
+        self.glass_alpha_pct: int = 100
+        self._pulse_phase: float = 0.0
+
+        from PyQt6.QtCore import QTimer
+        self._pulse_timer = QTimer(self)
+        self._pulse_timer.setInterval(50)
+        self._pulse_timer.timeout.connect(self._on_debug_pulse_tick)
 
         self.setFont(pick_monospace_font(11))
         self.setTabStopDistance(self.fontMetrics().horizontalAdvance(" ") * 4)
@@ -349,10 +356,11 @@ class CodeEditor(QPlainTextEdit):
 
     def _apply_editor_colors(self) -> None:
         t = self.theme
+        bg_val = qss_rgba(t.bg_editor, self.glass_alpha_pct) if self.glass_alpha_pct < 100 else t.bg_editor
         self.setStyleSheet(
             f"""
             QPlainTextEdit {{
-                background-color: {t.bg_editor};
+                background-color: {bg_val};
                 color: {t.fg_primary};
                 border: none;
                 selection-background-color: {t.bg_selection};
@@ -361,8 +369,14 @@ class CodeEditor(QPlainTextEdit):
             """
         )
 
-    def set_theme_and_profile(self, theme: StudioTheme, profile: Optional[KeywordProfile] = None) -> None:
+    def set_theme_and_profile(
+        self,
+        theme: StudioTheme,
+        profile: Optional[KeywordProfile] = None,
+        glass_alpha_pct: int = 100,
+    ) -> None:
         self.theme = theme
+        self.glass_alpha_pct = glass_alpha_pct
         if profile is not None:
             self.profile = profile
         self._apply_editor_colors()
@@ -412,12 +426,24 @@ class CodeEditor(QPlainTextEdit):
         self.line_number_area.update()
         self.breakpointsChanged.emit()
 
-    def set_debug_line(self, line: Optional[int]) -> None:
+    def set_debug_line(self, line: Optional[int], animate_pulse: bool = True) -> None:
         self.debug_line = line
         if line is not None and line >= 1:
             self.goto_line(line, focus=False)
+            if animate_pulse and not self._pulse_timer.isActive():
+                self._pulse_timer.start()
+        else:
+            self._pulse_timer.stop()
         self._refresh_extra_selections()
         self.line_number_area.update()
+
+    def _on_debug_pulse_tick(self) -> None:
+        if self.debug_line is None:
+            self._pulse_timer.stop()
+            return
+        import math
+        self._pulse_phase = (self._pulse_phase + 0.22) % (math.pi * 2.0)
+        self._refresh_extra_selections()
 
     def set_error_lines(self, errors: Dict[int, str]) -> None:
         self.error_lines = dict(errors)
@@ -462,12 +488,16 @@ class CodeEditor(QPlainTextEdit):
                 sel.cursor = QTextCursor(blk)
                 selections.append(sel)
 
-        # 3. Ligne active Pas-à-Pas (prioritaire)
+        # 3. Ligne active Pas-à-Pas (prioritaire, avec pulsation douce)
         if self.debug_line is not None:
             blk = self.document().findBlockByNumber(self.debug_line - 1)
             if blk.isValid():
+                import math
                 sel = QTextEdit.ExtraSelection()
-                sel.format.setBackground(QColor(t.line_debug))
+                dbg_col = QColor(t.line_debug)
+                pulse_alpha = int(175 + 65 * math.sin(self._pulse_phase))
+                dbg_col.setAlpha(max(110, min(250, pulse_alpha)))
+                sel.format.setBackground(dbg_col)
                 sel.format.setProperty(QTextCharFormat.Property.FullWidthSelection, True)
                 sel.cursor = QTextCursor(blk)
                 selections.append(sel)
@@ -478,7 +508,9 @@ class CodeEditor(QPlainTextEdit):
         painter = QPainter(self.line_number_area)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         t = self.theme
-        painter.fillRect(event.rect(), QColor(t.gutter_bg))
+        gutter_col = QColor(t.gutter_bg)
+        gutter_col.setAlpha(max(90, min(255, int(self.glass_alpha_pct * 2.55))))
+        painter.fillRect(event.rect(), gutter_col)
 
         block = self.firstVisibleBlock()
         block_number = block.blockNumber()
@@ -720,6 +752,7 @@ class EditorWorkspace(QWidget):
                     return ed
 
         ed = CodeEditor(self.theme, self.profile, self)
+        ed.set_theme_and_profile(self.theme, self.profile, getattr(self, "_glass_alpha_pct", 100))
         ed.file_path = path
         ed.setPlainText(content)
         ed.document().setModified(False)
@@ -753,13 +786,19 @@ class EditorWorkspace(QWidget):
         if w:
             w.deleteLater()
 
-    def set_theme_and_profile(self, theme: StudioTheme, profile: KeywordProfile) -> None:
+    def set_theme_and_profile(
+        self,
+        theme: StudioTheme,
+        profile: KeywordProfile,
+        glass_alpha_pct: int = 100,
+    ) -> None:
         self.theme = theme
         self.profile = profile
+        self._glass_alpha_pct = glass_alpha_pct
         for i in range(self.tabs.count()):
             ed = self.tabs.widget(i)
             if isinstance(ed, CodeEditor):
-                ed.set_theme_and_profile(theme, profile)
+                ed.set_theme_and_profile(theme, profile, glass_alpha_pct)
 
     def show_find_bar(self, with_replace: bool = False) -> None:
         self.find_bar.replace_input.setVisible(with_replace)

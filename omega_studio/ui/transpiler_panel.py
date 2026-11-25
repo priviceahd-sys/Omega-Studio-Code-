@@ -22,7 +22,7 @@ from ..core.ast_nodes import Program
 from ..core.keywords import KeywordProfile
 from ..core.transpiler import MultiTranspiler
 from .code_editor import pick_monospace_font
-from .themes import StudioTheme
+from .themes import StudioTheme, qss_rgba
 
 
 class TranspilerPanel(QWidget):
@@ -72,12 +72,13 @@ class TranspilerPanel(QWidget):
 
         self.apply_theme(theme)
 
-    def apply_theme(self, theme: StudioTheme) -> None:
+    def apply_theme(self, theme: StudioTheme, glass_alpha_pct: int = 100) -> None:
         self.theme = theme
+        bg_val = qss_rgba(theme.bg_editor, glass_alpha_pct) if glass_alpha_pct < 100 else theme.bg_editor
         self.code_view.setStyleSheet(
             f"""
             QPlainTextEdit {{
-                background-color: {theme.bg_editor};
+                background-color: {bg_val};
                 color: {theme.fg_primary};
                 border: 1px solid {theme.border};
                 border-radius: 6px;

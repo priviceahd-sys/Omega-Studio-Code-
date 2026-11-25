@@ -145,6 +145,17 @@ def make_icon(kind: str, color_hex: str = "#c0caf5", size: int = 22) -> QIcon:
         p.setBrush(col)
         p.drawPath(crescent)
 
+    elif kind == "palette":
+        # Palette d'artiste vectorielle avec 3 pastilles de couleur
+        p.drawEllipse(QRectF(m, m + 1, s - 2 * m, s - 2 * m - 1))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QColor("#38bdf8"))
+        p.drawEllipse(QPointF(s * 0.36, s * 0.38), 2.1, 2.1)
+        p.setBrush(QColor("#c084fc"))
+        p.drawEllipse(QPointF(s * 0.62, s * 0.36), 2.1, 2.1)
+        p.setBrush(QColor("#fb7185"))
+        p.drawEllipse(QPointF(s * 0.46, s * 0.64), 2.1, 2.1)
+
     p.end()
     return QIcon(pix)
 

@@ -49,13 +49,28 @@ from ..core.keywords import (
     read_alg_file_smart,
 )
 from ..core.verifier import Diagnostic, format_algorithm_source, verify_source
+from .appearance_studio import (
+    AnimatedBackdropWidget,
+    AppearanceStudioDialog,
+    animate_sidebar_width,
+    animate_widget_fade_in,
+)
 from .code_editor import EditorWorkspace, pick_monospace_font
 from .console_widget import ExecutionConsole
 from .debugger_panel import DebuggerPanel
 from .flowchart_widget import FlowchartWidget
 from .help_and_pers_dialog import AlgpersDialog, HelpBrowserWidget
 from .icons import make_app_logo_icon, make_icon
-from .themes import THEMES, StudioTheme, build_stylesheet
+from .themes import (
+    GRADIENT_PRESETS,
+    THEMES,
+    AppearanceConfig,
+    StudioTheme,
+    blend_hex,
+    build_stylesheet,
+    qss_rgba,
+    synthesize_mixed_theme,
+)
 from .transpiler_panel import TranspilerPanel
 
 SNIPPET_TEMPLATES: List[Tuple[str, str, str]] = [
@@ -152,10 +167,16 @@ class OmegaMainWindow(QMainWindow):
         self.setWindowIcon(make_app_logo_icon())
         self.resize(1440, 880)
 
-        # Chargement de la configuration utilisateur (XDG ~/.config/omega-studio-code/settings.json)
+        # Chargement de la configuration utilisateur (XDG ~/.config/omega-code-studio/settings.json)
         self.settings = self._load_settings()
-        theme_id = self.settings.get("theme", "omarchy_tokyonight")
-        self.theme: StudioTheme = THEMES.get(theme_id, THEMES["omarchy_tokyonight"])
+        self.base_theme_id: str = self.settings.get("theme", "omarchy_tokyonight")
+        if self.base_theme_id not in THEMES:
+            self.base_theme_id = "omarchy_tokyonight"
+        if "appearance" in self.settings:
+            self.appearance = AppearanceConfig.from_dict(self.settings["appearance"])
+        else:
+            self.appearance = AppearanceConfig(custom_colors_enabled=True)
+        self.theme: StudioTheme = synthesize_mixed_theme(THEMES[self.base_theme_id], self.appearance)
         self.profile = KeywordProfile.from_dict(self.settings["profile"]) if "profile" in self.settings else KeywordProfile()
         self.strict_alg32_mode: bool = bool(self.settings.get("strict_alg32", False))
         self.help_registry = HelpRegistry()
@@ -187,7 +208,7 @@ class OmegaMainWindow(QMainWindow):
         self._build_ui()
         self._build_menus()
         self._build_toolbar()
-        self.apply_theme(self.theme.id)
+        self.apply_appearance_and_theme()
 
         # Ouvre le fichier demandé ou l'exemple de bienvenue
         if initial_file and Path(initial_file).exists():
@@ -206,8 +227,8 @@ class OmegaMainWindow(QMainWindow):
     # ==========================================
 
     def _build_ui(self) -> None:
-        central = QWidget(self)
-        root_h = QHBoxLayout(central)
+        self.backdrop = AnimatedBackdropWidget(self)
+        root_h = QHBoxLayout(self.backdrop)
         root_h.setContentsMargins(0, 0, 0, 0)
         root_h.setSpacing(0)
 
@@ -222,6 +243,9 @@ class OmegaMainWindow(QMainWindow):
         self.btn_act_keywords = self._make_activity_btn("Palette Mots-clefs & Fonctions Alg_32 (Ctrl+Shift+K)")
         self.btn_act_flowchart = self._make_activity_btn("Afficher l'Organigramme")
         self.btn_act_translate = self._make_activity_btn("Afficher le Traducteur Python / C / JS / Pascal")
+        self.btn_act_appearance = self._make_activity_btn(
+            "Studio Visuel — Couleurs, Mélanges, Dégradés, Images & Animations"
+        )
         self.btn_act_pers = self._make_activity_btn("Atelier Algpers32 — Personnaliser les mots-clefs")
         self.btn_act_help = self._make_activity_btn("Manuel officiel Alg_32 (F1)")
 
@@ -230,6 +254,7 @@ class OmegaMainWindow(QMainWindow):
         self.btn_act_keywords.clicked.connect(lambda: self._switch_sidebar_page(1))
         self.btn_act_flowchart.clicked.connect(lambda: self.right_tabs.setCurrentWidget(self.flowchart_widget))
         self.btn_act_translate.clicked.connect(lambda: self.right_tabs.setCurrentWidget(self.transpiler_panel))
+        self.btn_act_appearance.clicked.connect(self.open_appearance_studio)
         self.btn_act_pers.clicked.connect(self.open_algpers_dialog)
         self.btn_act_help.clicked.connect(lambda: self.right_tabs.setCurrentWidget(self.help_browser))
 
@@ -238,6 +263,7 @@ class OmegaMainWindow(QMainWindow):
         act_v.addWidget(self.btn_act_flowchart)
         act_v.addWidget(self.btn_act_translate)
         act_v.addStretch(1)
+        act_v.addWidget(self.btn_act_appearance)
         act_v.addWidget(self.btn_act_pers)
         act_v.addWidget(self.btn_act_help)
 
@@ -335,6 +361,9 @@ class OmegaMainWindow(QMainWindow):
         self.right_tabs.addTab(self.transpiler_panel, "Traduction")
         self.right_tabs.addTab(self.help_browser, "Aide")
 
+        self.right_tabs.currentChanged.connect(self._on_right_tab_animated)
+        self.bottom_tabs.currentChanged.connect(self._on_bottom_tab_animated)
+
         # Assemblage horizontal global redimensionnable
         self.main_h_split = QSplitter(Qt.Orientation.Horizontal)
         self.main_h_split.addWidget(self.sidebar_stack)
@@ -347,7 +376,7 @@ class OmegaMainWindow(QMainWindow):
 
         root_h.addWidget(self.activity_bar)
         root_h.addWidget(self.main_h_split, 1)
-        self.setCentralWidget(central)
+        self.setCentralWidget(self.backdrop)
 
         # Barre d'état inférieure (style VS Code)
         status = QStatusBar(self)
@@ -459,11 +488,35 @@ class OmegaMainWindow(QMainWindow):
             fn_root.setExpanded(bool(filt))
 
     def _switch_sidebar_page(self, index: int) -> None:
+        use_anim = self.appearance.animations_enabled and self.appearance.anim_ui_transitions
         if self.sidebar_stack.isVisible() and self.sidebar_stack.currentIndex() == index:
-            self.sidebar_stack.setVisible(False)
+            if use_anim:
+                animate_sidebar_width(self.sidebar_stack, show=False)
+            else:
+                self.sidebar_stack.setVisible(False)
         else:
-            self.sidebar_stack.setVisible(True)
+            was_hidden = not self.sidebar_stack.isVisible()
             self.sidebar_stack.setCurrentIndex(index)
+            if was_hidden and use_anim:
+                animate_sidebar_width(self.sidebar_stack, show=True, target_width=245)
+            else:
+                self.sidebar_stack.setVisible(True)
+                if use_anim:
+                    w = self.sidebar_stack.currentWidget()
+                    if w is not None:
+                        animate_widget_fade_in(w, 160)
+
+    def _on_right_tab_animated(self, idx: int) -> None:
+        if self.appearance.animations_enabled and self.appearance.anim_ui_transitions:
+            w = self.right_tabs.widget(idx)
+            if w is not None:
+                animate_widget_fade_in(w, 175)
+
+    def _on_bottom_tab_animated(self, idx: int) -> None:
+        if self.appearance.animations_enabled and self.appearance.anim_ui_transitions:
+            w = self.bottom_tabs.widget(idx)
+            if w is not None:
+                animate_widget_fade_in(w, 175)
 
     # ==========================================
     # Barre de menus & Barre d'outils
@@ -568,8 +621,32 @@ class OmegaMainWindow(QMainWindow):
 
         # Menu Affichage & Thèmes
         m_view = mb.addMenu("&Affichage")
+        act_studio_visuel = QAction(
+            "&Studio Couleurs, Mélanges, Dégradés, Images && Animations...", self
+        )
+        act_studio_visuel.setShortcut(QKeySequence("Ctrl+Shift+P"))
+        act_studio_visuel.triggered.connect(self.open_appearance_studio)
+        m_view.addAction(act_studio_visuel)  # type: ignore[union-attr]
+
+        act_pick_imgs = QAction("Choisir &plusieurs images d'arrière-plan...", self)
+        act_pick_imgs.triggered.connect(self.quick_pick_multiple_images)
+        m_view.addAction(act_pick_imgs)  # type: ignore[union-attr]
+
+        act_next_img = QAction("Image d'arrière-plan &suivante", self)
+        act_next_img.triggered.connect(self.backdrop.next_image)
+        m_view.addAction(act_next_img)  # type: ignore[union-attr]
+
+        m_view.addSeparator()  # type: ignore[union-attr]
+
+        for pr in GRADIENT_PRESETS:
+            act_pr = QAction(f"Dégradé & Mélange : {pr.name}", self)
+            act_pr.triggered.connect(lambda _=False, p_obj=pr: self.apply_gradient_preset(p_obj.id))
+            m_view.addAction(act_pr)  # type: ignore[union-attr]
+
+        m_view.addSeparator()  # type: ignore[union-attr]
+
         for tid, t_obj in THEMES.items():
-            act_t = QAction(f"Thème : {t_obj.name}", self)
+            act_t = QAction(f"Thème sobre : {t_obj.name}", self)
             act_t.triggered.connect(lambda _=False, k=tid: self.apply_theme(k))
             m_view.addAction(act_t)  # type: ignore[union-attr]
 
@@ -664,37 +741,88 @@ class OmegaMainWindow(QMainWindow):
         tb.addAction(self.tb_stop)
         tb.addSeparator()
 
-        # Sélecteur rapide de thème visuel dans la barre d'outils
-        tb.addWidget(QLabel("  Thème : "))
+        # Bouton direct Studio Visuel + Sélecteur rapide de dégradé/thème dans la barre d'outils
+        self.tb_appearance = QAction("Couleurs && Images", self)
+        self.tb_appearance.setToolTip(
+            "Ouvrir le Studio Visuel : choisir plusieurs images, mélanger les couleurs, dégradés & animations (Ctrl+Shift+P)"
+        )
+        self.tb_appearance.triggered.connect(self.open_appearance_studio)
+        tb.addAction(self.tb_appearance)
+
+        tb.addWidget(QLabel(" "))
         self.theme_combo = QComboBox()
+        self.theme_combo.setMaximumWidth(195)
+        for pr in GRADIENT_PRESETS:
+            self.theme_combo.addItem(f"Dégradé : {pr.name}", f"preset:{pr.id}")
         for tid, tobj in THEMES.items():
             self.theme_combo.addItem(tobj.name, tid)
-        cur_idx = self.theme_combo.findData(self.theme.id)
-        if cur_idx >= 0:
-            self.theme_combo.setCurrentIndex(cur_idx)
         self.theme_combo.currentIndexChanged.connect(self._on_theme_combo_changed)
         tb.addWidget(self.theme_combo)
 
     # ==========================================
-    # Gestion des thèmes & préférences
+    # Gestion des thèmes, dégradés, images & animations
     # ==========================================
 
     def apply_theme(self, theme_id: str) -> None:
         if theme_id not in THEMES:
             return
-        self.theme = THEMES[theme_id]
-        t = self.theme
-        self.setStyleSheet(build_stylesheet(t))
-        self.activity_bar.setStyleSheet(
-            f"background-color: {t.bg_activity}; border-right: 1px solid {t.border};"
-        )
+        self.base_theme_id = theme_id
+        self.appearance.custom_colors_enabled = False
+        self.apply_appearance_and_theme()
 
-        # Régénère les icônes vectorielles avec les couleurs exactes du thème
+    def apply_gradient_preset(self, preset_id: str) -> None:
+        for pr in GRADIENT_PRESETS:
+            if pr.id == preset_id:
+                self.appearance.custom_colors_enabled = True
+                self.appearance.preset_id = pr.id
+                self.appearance.color_primary = pr.color_primary
+                self.appearance.color_secondary = pr.color_secondary
+                self.appearance.color_accent1 = pr.color_accent1
+                self.appearance.color_accent2 = pr.color_accent2
+                self.appearance.gradient_enabled = True
+                self.appearance.gradient_style = pr.gradient_style
+                self.appearance.gradient_angle = pr.gradient_angle
+                self.appearance.mix_ratio = pr.mix_ratio
+                break
+        self.apply_appearance_and_theme()
+
+    def apply_appearance_and_theme(self) -> None:
+        base_t = THEMES.get(self.base_theme_id, THEMES["omarchy_tokyonight"])
+        self.theme = synthesize_mixed_theme(base_t, self.appearance)
+        t = self.theme
+
+        has_backdrop = bool(
+            self.appearance.custom_colors_enabled
+            or self.appearance.gradient_enabled
+            or len(self.appearance.background_images) > 0
+        )
+        glass_alpha = self.appearance.glass_opacity if has_backdrop else 100
+
+        self.backdrop.set_theme_and_config(t, self.appearance)
+        self.setStyleSheet(build_stylesheet(t, self.appearance))
+
+        if self.appearance.gradient_enabled:
+            a1 = self.appearance.color_accent1 if self.appearance.custom_colors_enabled else t.accent
+            a2 = self.appearance.color_accent2 if self.appearance.custom_colors_enabled else t.syn_keyword
+            act_bg = (
+                f"qlineargradient(x1:0, y1:0, x2:0, y2:1, "
+                f"stop:0 {qss_rgba(t.bg_activity, min(100, glass_alpha + 6))}, "
+                f"stop:0.65 {qss_rgba(blend_hex(t.bg_activity, a1, 0.16), min(100, glass_alpha + 6))}, "
+                f"stop:1 {qss_rgba(blend_hex(t.bg_activity, a2, 0.22), min(100, glass_alpha + 6))})"
+            )
+            self.activity_bar.setStyleSheet(f"background: {act_bg}; border-right: 1px solid {t.border};")
+        else:
+            self.activity_bar.setStyleSheet(
+                f"background-color: {t.bg_activity}; border-right: 1px solid {t.border};"
+            )
+
+        # Régénère les icônes vectorielles avec les couleurs exactes du thème mélangé
         ic_fg = t.fg_primary
         self.btn_act_explorer.setIcon(make_icon("open_file", ic_fg, 22))
         self.btn_act_keywords.setIcon(make_icon("keywords", ic_fg, 22))
         self.btn_act_flowchart.setIcon(make_icon("flowchart", ic_fg, 22))
         self.btn_act_translate.setIcon(make_icon("translate", ic_fg, 22))
+        self.btn_act_appearance.setIcon(make_icon("palette", t.accent, 22))
         self.btn_act_pers.setIcon(make_icon("customize", ic_fg, 22))
         self.btn_act_help.setIcon(make_icon("help", ic_fg, 22))
 
@@ -707,6 +835,7 @@ class OmegaMainWindow(QMainWindow):
         self.tb_step.setIcon(make_icon("step_over", t.warning, 18))
         self.tb_step_in.setIcon(make_icon("step_into", t.accent, 18))
         self.tb_stop.setIcon(make_icon("stop", t.danger, 18))
+        self.tb_appearance.setIcon(make_icon("palette", t.accent, 18))
 
         self.right_tabs.setTabIcon(0, make_icon("step_over", t.warning, 16))
         self.right_tabs.setTabIcon(1, make_icon("flowchart", t.accent, 16))
@@ -718,29 +847,67 @@ class OmegaMainWindow(QMainWindow):
         self.bottom_tabs.setTabIcon(2, make_icon("new_file", ic_fg, 16))
         self.bottom_tabs.setTabIcon(3, make_icon("customize", t.warning, 16))
 
-        self.editor_workspace.set_theme_and_profile(t, self.profile)
-        self.console.apply_theme(t)
+        self.editor_workspace.set_theme_and_profile(t, self.profile, glass_alpha)
+        self.console.apply_theme(t, glass_alpha)
         self.debugger_panel.apply_theme(t)
-        self.flowchart_widget.apply_theme(t)
-        self.transpiler_panel.apply_theme(t)
-        self.help_browser.apply_theme(t)
+        self.flowchart_widget.apply_theme(t, glass_alpha)
+        self.transpiler_panel.apply_theme(t, glass_alpha)
+        self.help_browser.apply_theme(t, glass_alpha)
+        pr_bg = qss_rgba(t.bg_editor, glass_alpha) if glass_alpha < 100 else t.bg_editor
         self.printer_view.setStyleSheet(
-            f"background-color: {t.bg_editor}; color: {t.fg_primary}; border: 1px solid {t.border}; padding: 8px;"
+            f"background-color: {pr_bg}; color: {t.fg_primary}; border: 1px solid {t.border}; padding: 8px;"
         )
 
-        idx = self.theme_combo.findData(theme_id)
+        # Synchronise le menu déroulant de la barre d'outils
+        target_combo_data = (
+            f"preset:{self.appearance.preset_id}"
+            if self.appearance.custom_colors_enabled
+            else self.base_theme_id
+        )
+        idx = self.theme_combo.findData(target_combo_data)
         if idx >= 0 and self.theme_combo.currentIndex() != idx:
             self.theme_combo.blockSignals(True)
             self.theme_combo.setCurrentIndex(idx)
             self.theme_combo.blockSignals(False)
 
-        self.settings["theme"] = theme_id
+        self.settings["theme"] = self.base_theme_id
+        self.settings["appearance"] = self.appearance.to_dict()
         self._save_settings()
 
     def _on_theme_combo_changed(self) -> None:
-        tid = self.theme_combo.currentData()
-        if tid:
-            self.apply_theme(tid)
+        val = str(self.theme_combo.currentData() or "")
+        if val.startswith("preset:"):
+            self.apply_gradient_preset(val.split(":", 1)[1])
+        elif val in THEMES:
+            self.apply_theme(val)
+
+    def open_appearance_studio(self) -> None:
+        dlg = AppearanceStudioDialog(self.appearance, self.theme, self.backdrop, self)
+        dlg.setStyleSheet(self.styleSheet())
+        dlg.appearanceChanged.connect(self._on_live_appearance_updated)
+        dlg.appearanceChanged.connect(lambda _: dlg.setStyleSheet(self.styleSheet()))
+        dlg.exec()
+
+    def _on_live_appearance_updated(self, new_cfg: AppearanceConfig) -> None:
+        self.appearance = new_cfg
+        self.apply_appearance_and_theme()
+
+    def quick_pick_multiple_images(self) -> None:
+        start_dir = str(Path.home() / "Pictures") if (Path.home() / "Pictures").exists() else str(Path.home())
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Choisir une ou plusieurs images d'arrière-plan",
+            start_dir,
+            "Images (*.png *.jpg *.jpeg *.webp *.bmp);;Tous les fichiers (*)",
+        )
+        if files:
+            for f in files:
+                if f not in self.appearance.background_images:
+                    self.appearance.background_images.append(f)
+            self.appearance.active_image_index = max(0, len(self.appearance.background_images) - len(files))
+            if self.appearance.glass_opacity > 88:
+                self.appearance.glass_opacity = 80
+            self.apply_appearance_and_theme()
 
     def _load_settings(self) -> dict:
         p = _config_file_path()
@@ -756,6 +923,7 @@ class OmegaMainWindow(QMainWindow):
             self.settings["profile"] = self.profile.to_dict()
             self.settings["strict_alg32"] = self.strict_alg32_mode
             self.settings["workspace_dir"] = str(self.workspace_dir)
+            self.settings["appearance"] = self.appearance.to_dict()
             _config_file_path().write_text(
                 json.dumps(self.settings, ensure_ascii=False, indent=2), encoding="utf-8"
             )

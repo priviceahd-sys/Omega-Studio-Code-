@@ -37,7 +37,7 @@ from ..core.keywords import (
     import_legacy_alg_exec_ini,
 )
 from .code_editor import pick_monospace_font
-from .themes import StudioTheme
+from .themes import StudioTheme, qss_rgba
 
 
 class HelpBrowserWidget(QWidget):
@@ -94,10 +94,11 @@ class HelpBrowserWidget(QWidget):
 
         self._refresh_list()
 
-    def apply_theme(self, theme: StudioTheme) -> None:
+    def apply_theme(self, theme: StudioTheme, glass_alpha_pct: int = 100) -> None:
         self.theme = theme
+        bg_val = qss_rgba(theme.bg_editor, glass_alpha_pct) if glass_alpha_pct < 100 else theme.bg_editor
         self.detail_view.setStyleSheet(
-            f"background-color: {theme.bg_editor}; color: {theme.fg_primary}; border: 1px solid {theme.border}; padding: 8px;"
+            f"background-color: {bg_val}; color: {theme.fg_primary}; border: 1px solid {theme.border}; padding: 8px;"
         )
 
     def _refresh_list(self) -> None:

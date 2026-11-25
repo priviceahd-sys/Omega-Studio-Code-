@@ -21,7 +21,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .code_editor import pick_monospace_font
-from .themes import StudioTheme
+from .themes import StudioTheme, qss_rgba
 
 # Palette officielle des codes COULEUR 0..15 d'Alg_32 (alg_exec.ini enregistrement 037)
 VGA_PALETTE: Dict[int, str] = {
@@ -136,10 +136,15 @@ class ExecutionConsole(QWidget):
         self.set_waiting_input(False)
         self.apply_theme(theme)
 
-    def apply_theme(self, theme: StudioTheme) -> None:
+    def apply_theme(self, theme: StudioTheme, glass_alpha_pct: int = 100) -> None:
         self.theme = theme
-        bg_hex = VGA_PALETTE[self.bg_code] if self.bg_code is not None else theme.bg_editor
+        self._glass_alpha_pct = glass_alpha_pct
+        if self.bg_code is not None:
+            bg_hex = VGA_PALETTE[self.bg_code]
+        else:
+            bg_hex = qss_rgba(theme.bg_editor, glass_alpha_pct) if glass_alpha_pct < 100 else theme.bg_editor
         fg_hex = VGA_PALETTE[self.fg_code] if self.fg_code is not None else theme.fg_primary
+        elev_bg = qss_rgba(theme.bg_elevated, min(100, glass_alpha_pct + 6)) if glass_alpha_pct < 100 else theme.bg_elevated
         self.output.setStyleSheet(
             f"""
             QTextEdit {{
@@ -152,7 +157,7 @@ class ExecutionConsole(QWidget):
             """
         )
         self.input_container.setStyleSheet(
-            f"background-color: {theme.bg_elevated}; border-top: 1px solid {theme.border};"
+            f"background-color: {elev_bg}; border-top: 1px solid {theme.border};"
         )
 
     def set_status(self, label: str, color_hex: str) -> None:
@@ -164,7 +169,7 @@ class ExecutionConsole(QWidget):
         self.bg_code = None
         self.output.clear()
         self.cursor_label.setText("Curseur : L1, C1")
-        self.apply_theme(self.theme)
+        self.apply_theme(self.theme, getattr(self, "_glass_alpha_pct", 100))
 
     def _copy_all(self) -> None:
         from PyQt6.QtWidgets import QApplication

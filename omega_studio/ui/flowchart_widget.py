@@ -105,10 +105,12 @@ class FlowchartWidget(QWidget):
 
         self.apply_theme(theme)
 
-    def apply_theme(self, theme: StudioTheme) -> None:
+    def apply_theme(self, theme: StudioTheme, glass_alpha_pct: int = 100) -> None:
         self.theme = theme
-        self.view.setBackgroundBrush(QBrush(QColor(theme.bg_editor)))
-        self.view.setStyleSheet(f"border: 1px solid {theme.border}; border-radius: 6px;")
+        bg_c = QColor(theme.bg_editor)
+        bg_c.setAlpha(max(90, min(255, int(glass_alpha_pct * 2.55))))
+        self.view.setBackgroundBrush(QBrush(bg_c))
+        self.view.setStyleSheet(f"background: transparent; border: 1px solid {theme.border}; border-radius: 6px;")
         self._render_graph()
 
     def set_program(self, program: Optional[Program]) -> None:
