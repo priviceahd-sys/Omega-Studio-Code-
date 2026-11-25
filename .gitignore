@@ -13,7 +13,6 @@ build/
 dist/
 *.egg-info/
 *.zip
-windows/installer/*.exe
 
 # Données d'exécution temporaires (bases SQLite / fichiers Alg_32 de test)
 *.sqlite-journal

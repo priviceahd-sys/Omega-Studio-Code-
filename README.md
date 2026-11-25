@@ -24,7 +24,7 @@
 
 Un installateur graphique complet et 100 % autonome (**Python 3.12 + PyQt6 + SQLite3 inclus**, aucun prérequis ni droit Administrateur nécessaire) est fourni :
 
-1. Téléchargez **`Omega-Code-Studio-Setup-v2.0.0.exe`** depuis la section [**Releases GitHub (`v2.0.0`)**](https://github.com/priviceahd-sys/Omega-Studio-Code-/releases/tag/v2.0.0) (ou depuis `windows/installer/Omega-Code-Studio-Setup-v2.0.0.exe`).
+1. Téléchargez **`Omega-Code-Studio-Setup-v2.0.0.exe`** directement depuis [`windows/installer/Omega-Code-Studio-Setup-v2.0.0.exe`](windows/installer/Omega-Code-Studio-Setup-v2.0.0.exe).
 2. Double-cliquez sur **`Omega-Code-Studio-Setup-v2.0.0.exe`** puis cliquez sur **« Installer maintenant »** :
    - Installe l'application dans `%LOCALAPPDATA%\Programs\OmegaCodeStudio` (`OmegaCodeStudio.exe`).
    - Crée automatiquement les raccourcis **Bureau** et **Menu Démarrer**.
