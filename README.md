@@ -1,6 +1,6 @@
 # Ω Omega Code Studio v2.0
 
-**Omega Code Studio** est un environnement de développement intégré (IDE) de bureau en **Python / PyQt6**, conçu comme le successeur moderne complet d'**Alg_32 / Alg'exec** et d'**Algpers32** (Éducation Nationale / André Guntz), optimisé nativement pour **Omarchy** (Arch Linux + Hyprland / Wayland).
+**Omega Code Studio** est un environnement de développement intégré (IDE) de bureau en **Python / PyQt6**, conçu comme le successeur moderne complet d'**Alg_32 / Alg'exec** et d'**Algpers32** (Éducation Nationale / André Guntz), disponible à la fois en **installateur `.exe` autonome pour Windows 10 / 11** et nativement optimisé pour **Omarchy** (Arch Linux + Hyprland / Wayland).
 
 ---
 
@@ -8,7 +8,7 @@
 
 | Aspect | Alg_32 / Alg'exec historique (VB5, 1997) | Ω Omega Code Studio v2.0 (PyQt6) |
 | :--- | :--- | :--- |
-| **Système & Rendu** | Windows 95/98 (`MSVBVM50.dll`, installateur 16/32 bits incompatible Linux) | **Natif Linux / Omarchy (Wayland + Hyprland HiDPI)**, multiplateforme |
+| **Système & Rendu** | Windows 95/98 (`MSVBVM50.dll`, installateur 16/32 bits obsolète) | **Installateur `.exe` autonome Windows 10/11 (64 bits)** + **Natif Linux / Omarchy (Wayland + Hyprland HiDPI)** |
 | **Interface visuelle** | Fenêtres grises fixes `MS Sans Serif` / `Courier New` | **Studio Visuel complet (`Ctrl+Shift+P`)** : mélanges de couleurs sur mesure, 8 dégradés animés (*Aurore Boréale*, *Cyberpunk Néon*, *Crépuscule*...), galerie multi-images avec diaporama en fondu enchaîné, effet verre dépoli (*Glassmorphism*) + 4 thèmes classiques |
 | **Éditeur de code** | Mono-fichier, limité à 73 colonnes (et 25-30 lignes en démo), sans numéros de lignes | **Multi-onglets illimité**, numéros de lignes, coloration syntaxique, auto-indentation, auto-complétion (`Ctrl+Espace`), recherche/remplacement (`Ctrl+F` / `Ctrl+H`), points d'arrêt (`F9`) et formateur automatique (`Ctrl+Shift+F`) |
 | **Débogage Pas-à-Pas** | Fenêtre séparée rudimentaire tronquant les valeurs à 35 caractères | **Débogueur visuel intégré** (`F10` Suivant, `F11` Entrer, `F8` Cadence auto réglable), espion complet des variables, tableaux 1D/2D/3D, structures et pile d'appels récursive |
@@ -17,6 +17,21 @@
 | **Base SQL (`EXEC SQL`)** | Dépendance obsolète Microsoft Access 2.0 (`DAO350.dll`) | **Moteur SQLite3 embarqué natif** (`START DATABASE`, `SELECT ... INTO :var`, curseurs `DECLARE / OPEN / FETCH / CLOSE`) + explorateur de tables intégré |
 | **Personnalisation** | Exécutable séparé `Algpers32.exe` | **Atelier Algpers32 intégré** avec import direct des fichiers historiques `alg_exec.ini` et export JSON |
 | **Aide officielle** | Fichier binaire `alg_exec.ini` CP1252 | **77 fiches du manuel officiel Alg_32 intégrées en UTF-8**, consultables via `F1` avec insertion rapide |
+
+---
+
+## 🪟 Installation directe sur Windows 10 / 11 (`.exe` autonome)
+
+Un installateur graphique complet et 100 % autonome (**Python 3.12 + PyQt6 + SQLite3 inclus**, aucun prérequis ni droit Administrateur nécessaire) est fourni :
+
+1. Téléchargez **`Omega-Code-Studio-Setup-v2.0.0.exe`** depuis la section [**Releases GitHub (`v2.0.0`)**](https://github.com/priviceahd-sys/Omega-Studio-Code-/releases/tag/v2.0.0) (ou depuis `windows/installer/Omega-Code-Studio-Setup-v2.0.0.exe`).
+2. Double-cliquez sur **`Omega-Code-Studio-Setup-v2.0.0.exe`** puis cliquez sur **« Installer maintenant »** :
+   - Installe l'application dans `%LOCALAPPDATA%\Programs\OmegaCodeStudio` (`OmegaCodeStudio.exe`).
+   - Crée automatiquement les raccourcis **Bureau** et **Menu Démarrer**.
+   - Associe les fichiers **`.alg`** pour les ouvrir directement par double-clic dans **Omega Code Studio**.
+   - Ajoute le désinstallateur propre (`Uninstall-OmegaCodeStudio.exe`) dans *Applications installées* de Windows.
+
+*(Pour régénérer l'installateur `.exe` depuis les sources : `python3 windows/build_windows_installer.py`)*
 
 ---
 

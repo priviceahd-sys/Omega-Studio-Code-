@@ -12,14 +12,22 @@ from typing import List, Optional
 from . import __app_name__, __version__
 
 
-def configure_wayland_environment() -> None:
+def configure_platform_environment() -> None:
     """
-    Configure automatiquement Qt6 pour un rendu natif net sur Wayland / Hyprland (Omarchy),
-    avec repli transparent sur X11/XWayland si nécessaire.
+    Configure automatiquement Qt6 :
+    - Sur Linux / Omarchy : rendu natif Wayland / Hyprland (repli X11/XWayland)
+    - Sur Windows 10/11 : identifiant AppUserModelID pour l'icône de barre des tâches
     """
     if sys.platform.startswith("linux") and "QT_QPA_PLATFORM" not in os.environ:
         if os.environ.get("WAYLAND_DISPLAY"):
             os.environ["QT_QPA_PLATFORM"] = "wayland;xcb"
+    elif sys.platform == "win32":
+        try:
+            import ctypes
+
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("OmegaCodeStudio.IDE.2.0")
+        except Exception:
+            pass
     os.environ.setdefault("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
 
 
@@ -35,11 +43,13 @@ def run_app(argv: Optional[List[str]] = None) -> int:
         print("Utilisation : omega-code-studio [fichier.alg]")
         return 0
 
-    configure_wayland_environment()
+    configure_platform_environment()
 
     from PyQt6.QtCore import Qt
     from PyQt6.QtWidgets import QApplication
 
+    from pathlib import Path
+    from PyQt6.QtGui import QIcon
     from .ui.main_window import OmegaMainWindow
 
     QApplication.setHighDpiScaleFactorRoundingPolicy(
@@ -52,6 +62,17 @@ def run_app(argv: Optional[List[str]] = None) -> int:
     app.setApplicationDisplayName(__app_name__)
     app.setDesktopFileName(desktop_id)
     app.setApplicationVersion(__version__)
+
+    assets_dir = Path(__file__).resolve().parent.parent / "assets"
+    icon_candidates = (
+        [assets_dir / "omega-code-studio.ico", assets_dir / "omega-studio-code.svg"]
+        if sys.platform == "win32"
+        else [assets_dir / "omega-studio-code.svg", assets_dir / "omega-code-studio.ico"]
+    )
+    for icon_file in icon_candidates:
+        if icon_file.exists():
+            app.setWindowIcon(QIcon(str(icon_file)))
+            break
 
     initial_file = args[1] if len(args) > 1 and not args[1].startswith("-") else None
     win = OmegaMainWindow(initial_file=initial_file)

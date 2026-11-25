@@ -223,6 +223,7 @@ def discover_omarchy_wallpapers(max_count: int = 20) -> List[str]:
         home / "Pictures" / "Wallpapers",
         home / "Pictures",
         home / "Images",
+        Path("C:/Windows/Web/Wallpaper"),
     ]
     exts = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
     found: List[str] = []

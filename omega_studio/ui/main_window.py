@@ -143,8 +143,13 @@ SNIPPET_TEMPLATES: List[Tuple[str, str, str]] = [
 
 
 def _config_file_path() -> Path:
-    xdg = os.environ.get("XDG_CONFIG_HOME")
-    base = Path(xdg) if xdg else (Path.home() / ".config")
+    import sys
+
+    if sys.platform == "win32" and os.environ.get("APPDATA"):
+        base = Path(os.environ["APPDATA"])
+    else:
+        xdg = os.environ.get("XDG_CONFIG_HOME")
+        base = Path(xdg) if xdg else (Path.home() / ".config")
     desktop_id = os.environ.get("OMEGA_DESKTOP_ID", "omega-code-studio")
     cfg_dir = base / desktop_id
     cfg_dir.mkdir(parents=True, exist_ok=True)
